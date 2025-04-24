@@ -20,6 +20,7 @@ const PuzzleSection = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 10px;
   margin-top: 20px;
+  position: relative;
 `;
 
 const PuzzlePiece = styled.div<{ isCorrect: boolean }>`
@@ -28,6 +29,16 @@ const PuzzlePiece = styled.div<{ isCorrect: boolean }>`
   border: 2px solid ${props => props.isCorrect ? 'green' : 'gray'};
   cursor: move;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 2;
+`;
+
+const CorrectPosition = styled.div`
+  width: 100px;
+  height: 100px;
+  border: 2px dashed #ccc;
+  position: absolute;
+  z-index: 1;
 `;
 
 const Controls = styled.div`
@@ -92,19 +103,26 @@ const DraggablePuzzlePiece: React.FC<PuzzlePieceProps> = ({ piece, movePiece }) 
   }));
 
   return (
-    <PuzzlePiece
-      ref={(node: HTMLDivElement | null) => {
-        drag(node);
-        drop(node);
-      }}
-      isCorrect={piece.currentPosition.x === piece.correctPosition.x && piece.currentPosition.y === piece.correctPosition.y}
-      style={{
-        backgroundImage: `url(${piece.image})`,
-        backgroundSize: 'cover',
-        transform: `translate(${piece.currentPosition.x}px, ${piece.currentPosition.y}px)`,
-        opacity: isDragging ? 0.5 : 1,
-      }}
-    />
+    <React.Fragment>
+      <CorrectPosition
+        style={{
+          transform: `translate(${piece.correctPosition.x}px, ${piece.correctPosition.y}px)`
+        }}
+      />
+      <PuzzlePiece
+        ref={(node: HTMLDivElement | null) => {
+          drag(node);
+          drop(node);
+        }}
+        isCorrect={piece.currentPosition.x === piece.correctPosition.x && piece.currentPosition.y === piece.correctPosition.y}
+        style={{
+          backgroundImage: `url(${piece.image})`,
+          backgroundSize: 'cover',
+          transform: `translate(${piece.currentPosition.x}px, ${piece.currentPosition.y}px)`,
+          opacity: isDragging ? 0.5 : 1,
+        }}
+      />
+    </React.Fragment>
   );
 };
 
@@ -114,6 +132,7 @@ function App() {
   const [pieces, setPieces] = useState<PuzzlePieceData[]>([]);
   const [numPieces, setNumPieces] = useState(9);
   const [isComplete, setIsComplete] = useState(false);
+  const [showOriginalImage, setShowOriginalImage] = useState(true);
 
   const onImageLoad = (crop: Crop, percentageCrop: Crop) => {
     setCrop({ unit: '%', width: 100, height: 100, x: 0, y: 0 });
@@ -172,6 +191,7 @@ function App() {
       }
 
       setPieces(newPieces);
+      setShowOriginalImage(false);
     };
   };
 
@@ -213,7 +233,7 @@ function App() {
           <input type="file" accept="image/*" onChange={handleImageUpload} />
         </UploadSection>
 
-        {image && (
+        {image && showOriginalImage && (
           <>
             <ReactCrop
               crop={crop}
@@ -236,11 +256,17 @@ function App() {
 
         <PuzzleSection>
           {pieces.map(piece => (
-            <DraggablePuzzlePiece
-              key={piece.id}
-              piece={piece}
-              movePiece={movePiece}
-            />
+            <React.Fragment key={piece.id}>
+              <CorrectPosition
+                style={{
+                  transform: `translate(${piece.correctPosition.x}px, ${piece.correctPosition.y}px)`
+                }}
+              />
+              <DraggablePuzzlePiece
+                piece={piece}
+                movePiece={movePiece}
+              />
+            </React.Fragment>
           ))}
         </PuzzleSection>
 
