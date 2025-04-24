@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/zigsaw-puzzle/static/css/main.1a929f8e.css",
-    "main.js": "/zigsaw-puzzle/static/js/main.5000334f.js",
+    "main.js": "/zigsaw-puzzle/static/js/main.8c912afd.js",
     "static/js/453.1b7a5710.chunk.js": "/zigsaw-puzzle/static/js/453.1b7a5710.chunk.js",
     "index.html": "/zigsaw-puzzle/index.html",
     "main.1a929f8e.css.map": "/zigsaw-puzzle/static/css/main.1a929f8e.css.map",
-    "main.5000334f.js.map": "/zigsaw-puzzle/static/js/main.5000334f.js.map",
+    "main.8c912afd.js.map": "/zigsaw-puzzle/static/js/main.8c912afd.js.map",
     "453.1b7a5710.chunk.js.map": "/zigsaw-puzzle/static/js/453.1b7a5710.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.1a929f8e.css",
-    "static/js/main.5000334f.js"
+    "static/js/main.8c912afd.js"
   ]
 }
