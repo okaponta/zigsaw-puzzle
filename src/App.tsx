@@ -11,6 +11,17 @@ const Container = styled.div`
   padding: 20px;
 `;
 
+const Version = styled.div`
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 14px;
+`;
+
 const UploadSection = styled.div`
   margin-bottom: 20px;
 `;
@@ -18,27 +29,34 @@ const UploadSection = styled.div`
 const PuzzleSection = styled.div`
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-  gap: 10px;
+  gap: 0;
   margin-top: 20px;
   position: relative;
+  width: fit-content;
+  margin: 20px auto;
+  border: 1px solid #ccc;
 `;
 
 const PuzzlePiece = styled.div<{ isCorrect: boolean }>`
   width: 100px;
   height: 100px;
-  border: 2px solid ${props => props.isCorrect ? 'green' : 'gray'};
+  border: 1px solid ${props => props.isCorrect ? 'green' : 'gray'};
   cursor: move;
   transition: all 0.3s ease;
-  position: relative;
+  position: absolute;
   z-index: 2;
+  background-size: cover;
+  background-position: center;
 `;
 
-const CorrectPosition = styled.div`
+const CorrectPosition = styled.div<{ isFilled: boolean }>`
   width: 100px;
   height: 100px;
-  border: 2px dashed #ccc;
+  border: ${props => props.isFilled ? 'none' : '1px dashed #ccc'};
   position: absolute;
   z-index: 1;
+  background: ${props => props.isFilled ? 'none' : 'rgba(255, 255, 255, 0.1)'};
+  pointer-events: none;
 `;
 
 const Controls = styled.div`
@@ -105,8 +123,13 @@ const DraggablePuzzlePiece: React.FC<PuzzlePieceProps> = ({ piece, movePiece }) 
   return (
     <React.Fragment>
       <CorrectPosition
+        isFilled={piece.currentPosition.x === piece.correctPosition.x && 
+                 piece.currentPosition.y === piece.correctPosition.y}
         style={{
-          transform: `translate(${piece.correctPosition.x}px, ${piece.correctPosition.y}px)`
+          transform: `translate(${piece.correctPosition.x}px, ${piece.correctPosition.y}px)`,
+          backgroundImage: piece.currentPosition.x === piece.correctPosition.x && 
+                         piece.currentPosition.y === piece.correctPosition.y ? 
+                         `url(${piece.image})` : 'none'
         }}
       />
       <PuzzlePiece
@@ -182,11 +205,18 @@ function App() {
 
         pieceCtx.drawImage(canvas, x, y, pieceSize, pieceSize, 0, 0, pieceSize, pieceSize);
 
+        // 初期位置を正解位置の近くに設定（±100pxの範囲）
+        const offsetX = (Math.random() - 0.5) * 200;
+        const offsetY = (Math.random() - 0.5) * 200;
+
         newPieces.push({
           id: i,
           image: pieceCanvas.toDataURL(),
           correctPosition: { x, y },
-          currentPosition: { x: Math.random() * 500, y: Math.random() * 500 }
+          currentPosition: { 
+            x: x + offsetX, 
+            y: y + offsetY 
+          }
         });
       }
 
@@ -199,18 +229,39 @@ function App() {
     setPieces(prevPieces => {
       const newPieces = [...prevPieces];
       const piece = newPieces.find(p => p.id === id);
-      if (piece) {
-        piece.currentPosition = position;
-        
-        // 正解位置との距離をチェック
-        const distance = Math.sqrt(
-          Math.pow(piece.currentPosition.x - piece.correctPosition.x, 2) +
-          Math.pow(piece.currentPosition.y - piece.correctPosition.y, 2)
+      if (!piece) return newPieces;
+
+      // 他のピースと重なっているかチェック
+      const isOverlapping = newPieces.some(p => 
+        p.id !== id && 
+        Math.abs(p.currentPosition.x - position.x) < 50 && 
+        Math.abs(p.currentPosition.y - position.y) < 50
+      );
+
+      if (isOverlapping) return newPieces;
+
+      // 正解位置との距離をチェック
+      const distance = Math.sqrt(
+        Math.pow(position.x - piece.correctPosition.x, 2) +
+        Math.pow(position.y - piece.correctPosition.y, 2)
+      );
+
+      // 正解位置との距離が30px以内の場合
+      if (distance < 30) {
+        // 正解位置に他のピースがいるかチェック
+        const isCorrectPositionOccupied = newPieces.some(p => 
+          p.id !== id && 
+          p.currentPosition.x === piece.correctPosition.x && 
+          p.currentPosition.y === piece.correctPosition.y
         );
 
-        if (distance < 20) {
+        if (!isCorrectPositionOccupied) {
           piece.currentPosition = piece.correctPosition;
+        } else {
+          piece.currentPosition = position;
         }
+      } else {
+        piece.currentPosition = position;
       }
 
       // すべてのピースが正しい位置にあるかチェック
@@ -227,6 +278,7 @@ function App() {
   return (
     <DndProvider backend={HTML5Backend}>
       <Container>
+        <Version>v0.1.4</Version>
         <h1>ジグソーパズル</h1>
         
         <UploadSection>
@@ -254,18 +306,29 @@ function App() {
           </>
         )}
 
-        <PuzzleSection>
+        <PuzzleSection style={{ 
+          width: `${Math.sqrt(numPieces) * 100}px`,
+          height: `${Math.sqrt(numPieces) * 100}px`
+        }}>
           {pieces.map(piece => (
             <React.Fragment key={piece.id}>
               <CorrectPosition
+                isFilled={piece.currentPosition.x === piece.correctPosition.x && 
+                         piece.currentPosition.y === piece.correctPosition.y}
                 style={{
-                  transform: `translate(${piece.correctPosition.x}px, ${piece.correctPosition.y}px)`
+                  transform: `translate(${piece.correctPosition.x}px, ${piece.correctPosition.y}px)`,
+                  backgroundImage: piece.currentPosition.x === piece.correctPosition.x && 
+                                 piece.currentPosition.y === piece.correctPosition.y ? 
+                                 `url(${piece.image})` : 'none'
                 }}
               />
-              <DraggablePuzzlePiece
-                piece={piece}
-                movePiece={movePiece}
-              />
+              {piece.currentPosition.x !== piece.correctPosition.x || 
+               piece.currentPosition.y !== piece.correctPosition.y ? (
+                <DraggablePuzzlePiece
+                  piece={piece}
+                  movePiece={movePiece}
+                />
+              ) : null}
             </React.Fragment>
           ))}
         </PuzzleSection>
